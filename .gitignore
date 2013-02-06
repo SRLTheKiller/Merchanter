@@ -1,10 +1,26 @@
-*.dcu
-*.~*~
-*.local
-*.identcache
-__history
-*.drc
-*.map
-*.exe
-*.dll
-bin/*
+procedure HighLowTest;
+var
+  Buyprice, SellPrice, HiLow: Integer;
+begin
+  GEBuy(MerchingItem, '300', '1');    //Buying Item
+  Wait(2000)
+  if GEFinishedAt(1) then MouseTBox(GESpotToTbox(2), mouse_left); // checks if it's finished
+  Wait(2000)
+  BuyPrice := StrToInt(GetNumbers(GetTextAtExWrap(131, 286, 344, 300, 0, 50, 10, 39372, 5, 'StatChars')))
+  Writeln('Buy Price' + IntToStr(BuyPrice))   //Writing buying Price
+  GEMenuExit;            //Exiting Menu
+  GEREcoverAt(2);        //Getting the Item
+  GeSell('1', '1', 1);       //Selling Item
+  Wait(1000)
+  if GEFinishedAt(1) then MouseTBox(GESpotToTbox(2), mouse_left); // checks if it's finished
+  Wait(1000)
+  SellPrice := StrToInt(GetNumbers(GetTextAtExWrap(131, 286, 344, 300, 0, 50, 10, 39372, 5, 'StatChars')))
+  Writeln('Sell Price' + IntToStr(SellPrice))     //Writes selling price
+  GEMenuExit;                   //exitign menu
+  GEREcoverAt(2);               //getting my precious money
+  Hilow := BuyPrice - SellPrice
+  Wait(1000)
+  Writeln('HighLow' + IntToStr(HiLow)) // that's the high low
+
+  //was just to test, i know it looks stupid :)
+end;      
