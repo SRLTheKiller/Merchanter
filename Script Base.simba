@@ -18,9 +18,43 @@ program merch;
 {==========        5.                                                 =========}
 {==============================================================================}
 {==============================================================================}
+type MerchingInfo = record
+  Name: string;
+  Buyprice, SellPrice, Slot, GeLimit: Integer;
+end;
 
 const
   MinProfitPerFlip = 100000; //min amount to make per flip
+
+var
+  FlippingItems: array[0..4] of MerchingInfo;
+
+procedure LoadBarInfo;
+begin
+  with FlippingItems[0] do
+  begin
+    Name := 'ItemName';
+    GeLimit := 10000;
+  end;
+
+  with FlippingItems[1] do
+  begin
+    Name := 'ItemName';
+    GeLimit := 10000;
+  end;
+
+  with FlippingItems[2] do
+  begin
+    Name := 'ItemName';
+    GeLimit := 10000;
+  end;
+
+  with FlippingItems[4] do
+  begin
+    Name := 'ItemName';
+    GeLimit := 10000;
+  end;
+end;
 
 procedure DeclarePlayers;
 begin
@@ -40,9 +74,9 @@ procedure HighLowTest;
 var
   Buyprice, SellPrice, Margin: Integer;
 begin
-  BuyPrice := GetGEPrice(MerchingItem);
+  BuyPrice := GetGEPrice(FlippingItems[0].Name);
   BuyPrice := BuyPrice * 1.2;
-  GEBuy(MerchingItem, IntToStr(BuyPrice), '1');    //Buying Item
+  GEBuy(FlippingItems[0].Name, IntToStr(BuyPrice), '1');    //Buying Item
   Wait(2000);
 
   if GEFinishedAt(1) then
@@ -87,6 +121,10 @@ begin
   begin
   Writeln('Profit Per Flip is less than Min Profit Per Flip');
   end;
+end;
+
+procedure FlipItem;
+begin
 end;
 
 
