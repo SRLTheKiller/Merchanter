@@ -2,6 +2,8 @@ program merch;
 
 {$Define SMART8}
 {$i SRL/SRL.simba}
+{$i SRL/SRL/misc/Grandexchange.simba}
+{$i SRL/SRL/misc/Online.simba}
 
 
 {==============================================================================}
@@ -17,6 +19,9 @@ program merch;
 {==============================================================================}
 {==============================================================================}
 
+const
+  MinProfitPerFlip = 100000; //min amount to make per flip
+
 procedure DeclarePlayers;
 begin
   HowManyPlayers := 1;
@@ -28,6 +33,59 @@ begin
     Pass       := '';                //Password
     Pin        := '';           // Leave blank if you don't have one
     Active     := True;
+  end;
+end;
+
+procedure HighLowTest;
+var
+  Buyprice, SellPrice, Margin: Integer;
+begin
+  BuyPrice := GetGEPrice(MerchingItem);
+  BuyPrice := BuyPrice * 1.2;
+  GEBuy(MerchingItem, IntToStr(BuyPrice), '1');    //Buying Item
+  Wait(2000);
+
+  if GEFinishedAt(1) then
+    MouseTBox(GESpotToTbox(2), mouse_left); // checks if it's finished
+  else
+  begin
+    Writeln('Item didnt buy at 20% over ge price, aborting...');
+    GERecoverAtEx(1, True);
+    Exit;
+  end;
+
+  Wait(2000);
+
+  BuyPrice := StrToInt(GetNumbers(GetTextAtExWrap(131, 286, 344, 300, 0, 50, 10, 39372, 5, 'StatChars')));
+  Writeln('Buy Price' + IntToStr(BuyPrice));   //Writing buying Price
+  GEMenuExit;            //Exiting Menu
+  GEREcoverAt(2);        //Getting the Item
+  GeSell('1', '1', 1);       //Selling Item
+  Wait(1000);
+
+  if GEFinishedAt(1) then MouseTBox(GESpotToTbox(2), mouse_left); // checks if it's finished
+  else
+  begin
+    writeln('Couldnt sell at 1gp - useless. Aborting...');
+    GERecoverAtEx(1, True);
+    Exit;
+  end;
+
+  Wait(1000);
+  SellPrice := StrToInt(GetNumbers(GetTextAtExWrap(131, 286, 344, 300, 0, 50, 10, 39372, 5, 'StatChars')))
+  Writeln('Sell Price' + IntToStr(SellPrice))     //Writes selling price
+  GEMenuExit;                   //exitign menu
+  GEREcoverAt(2);               //getting my precious money
+  Margin := BuyPrice - SellPrice
+  Wait(1000);
+  Writeln('Margin: ' + IntToStr(Margin)) // that's the high low
+  ProfitPerFlip := Margin * GeLimit;
+
+  If ProfitPerFlip >= MinProfitPerFlip then
+    FlipItem;
+  else
+  begin
+  Writeln('Profit Per Flip is less than Min Profit Per Flip');
   end;
 end;
 
