@@ -33,8 +33,8 @@ procedure LoadBarInfo;
 begin
   with FlippingItems[0] do
   begin
-    Name := 'ItemName';
-    GeLimit := 10000;
+    Name := 'Iron Ore';
+    GeLimit := 25000;
   end;
 
   with FlippingItems[1] do
@@ -70,63 +70,91 @@ begin
   end;
 end;
 
-procedure HighLowTest;
+function HighLow(index: integer): boolean;//Returns successful.  edits FlippingItem[index] for found values
 var
-  Buyprice, SellPrice, Margin: Integer;
+  Buyprice, SellPrice, Margin, ProfitPerFlip, spot: Integer;
 begin
-  BuyPrice := GetGEPrice(FlippingItems[0].Name);
-  BuyPrice := BuyPrice * 1.2;
-  GEBuy(FlippingItems[0].Name, IntToStr(BuyPrice), '1');    //Buying Item
-  Wait(2000);
+  Result:= False;//default   , don't need this? - killer
+  if(not GEFindFreeSpot(spot))then
+  begin
+    WriteLn('All current GE spots are taken.');
+    Exit;
+  end;
+  BuyPrice := GetGEPrice(FlippingItems[index].Name);
+  BuyPrice := Round(BuyPrice * 1.2);
+  GEBuy(FlippingItems[index].Name, IntToStr(BuyPrice), '1');    //Buying Item
+  Wait(5000);
 
-  if GEFinishedAt(1) then
-    MouseTBox(GESpotToTbox(2), mouse_left); // checks if it's finished
-  else
+  if GEFinishedAt(spot) then
+  begin
+    MouseTBox(GESpotToTbox(spot), mouse_left); // checks if it's finished
+  end else
   begin
     Writeln('Item didnt buy at 20% over ge price, aborting...');
-    GERecoverAtEx(1, True);
+    GERecoverAtEx(spot, True);
     Exit;
   end;
 
   Wait(2000);
 
   BuyPrice := StrToInt(GetNumbers(GetTextAtExWrap(131, 286, 344, 300, 0, 50, 10, 39372, 5, 'StatChars')));
-  Writeln('Buy Price' + IntToStr(BuyPrice));   //Writing buying Price
-  GEMenuExit;            //Exiting Menu
-  GEREcoverAt(2);        //Getting the Item
+  Writeln('Buy Price ' + IntToStr(BuyPrice));   //Writing buying Price
+  FlippingItems[index].Sellprice:= BuyPrice;
+  GEMenuExit;            //Exiting Menu (Seems buggy, read it.  Has NO randomness at all.  I may rewrite some of the functions in there)
+  GEREcoverAt(spot);        //Getting the Item
   GeSell('1', '1', 1);       //Selling Item
   Wait(1000);
 
-  if GEFinishedAt(1) then MouseTBox(GESpotToTbox(2), mouse_left); // checks if it's finished
-  else
+  if GEFinishedAt(spot) then
+  begin
+    MouseTBox(GESpotToTbox(spot), mouse_left); // checks if it's finished
+  end else
   begin
     writeln('Couldnt sell at 1gp - useless. Aborting...');
-    GERecoverAtEx(1, True);
+    GERecoverAtEx(spot, True);
     Exit;
   end;
 
-  Wait(1000);
+  Wait(2000);
   SellPrice := StrToInt(GetNumbers(GetTextAtExWrap(131, 286, 344, 300, 0, 50, 10, 39372, 5, 'StatChars')))
+  FlippingItems[index].BuyPrice:= SellPrice;
   Writeln('Sell Price' + IntToStr(SellPrice))     //Writes selling price
-  GEMenuExit;                   //exitign menu
-  GEREcoverAt(2);               //getting my precious money
+  GEMenuExit;                   //exiting menu
+  Wait(2000);
+  GERecoverAt(1);               //getting my precious money
   Margin := BuyPrice - SellPrice
-  Wait(1000);
   Writeln('Margin: ' + IntToStr(Margin)) // that's the high low
-  ProfitPerFlip := Margin * GeLimit;
+  ProfitPerFlip := Margin * FlippingItems[index].GeLimit;
 
   If ProfitPerFlip >= MinProfitPerFlip then
-    FlipItem;
-  else
   begin
-  Writeln('Profit Per Flip is less than Min Profit Per Flip');
+    Result:= True;
+  end else
+  begin
+    Writeln('Profit Per Flip is less than Min Profit Per Flip');
   end;
 end;
 
-procedure FlipItem;
+procedure FlipItem(index: integer);
+var
+  x: integer;
 begin
-end;
+  x:= 0;
+  GEBuy(FlippingItems[index].Name, IntToStr(FlippingItems[index].BuyPrice), IntToStr(FlippingItems[index].GELimit - 1));    //Buying Item
+  wait(15000);//If not done in 15 seconds, do other stuff for half hour.  That logic will need to be off a timer and exist elsewhere I think
+  if(GEFinishedAt(FlippingItems[index].slot))then//Bought all, so sell
+  begin
+    GeSell(IntToStr(FlippingItems[index].SellPrice), 'all', 1);       //Selling Item
+  end else begin
 
+  end;
+
+  {
+  if x=300 then//half an hour and not done
+    GERecoverAtEx(FlippingItems[index].spot, True);
+   }
+
+end;
 
 //By Bandland100, modified by Ashaman88 to shift mouse speeds after every step
 //
@@ -256,39 +284,9 @@ Procedure HumanMouseBox(X1, Y1, X2, Y2: Integer);
       HumanMMouse(FX,FY,0,0)
     End;
 
-function WalkTPA(color,tol,Xoff,Yoff:integer;point:TPoint):boolean;
-var
-  TPA:TPointArray;
-  ATPA:T2DPointArray;
-  x,y,i,num:integer;
-begin
-  if(FindColorsSpiralTolerance(point.x,point.y,TPA,color,MMX1,MMY1,MMX2,MMY2,tol)) then
-  begin
-    TPAToATPAWrap(TPA,15,ATPA);
-    SortATPAFrom(ATPA,point);
-    num := RandomRange(0,(high(ATPA[0])/2));
-     for i := num to high(ATPA[0]) do
-    begin
-      x := ATPA[0][i].x;
-      y := ATPA[0][i].y;
 
-      if (not rs_OnMinimap(x, y)) then
-        continue;
-
-      mouse(x + Xoff, y + Yoff, 4, 4, mouse_left);
-
-      if (waitFunc(@flag, 50, 3000)) then
-      begin
-        result := true;
-        exit;
-      end;
-    end;
-  end;
-end;
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-
-
 
 begin
   ClearDebug;
@@ -298,4 +296,6 @@ begin
   LoadBarInfo;
   DeclarePlayers;
   LoginPlayer;
+  if(HighLow(0))then
+    FlipItem(0);
 end.
