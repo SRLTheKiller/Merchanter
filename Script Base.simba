@@ -18,7 +18,13 @@ program merch;
 {==========        5.                                                 =========}
 {==============================================================================}
 {==============================================================================}
-type MerchingInfo = record
+type TGeLimits = record
+  TimeWhenHit: array of Integer;
+  SlotsBeingUsed: array of Integer; // 0 for none, 1 for first slot only, 2 for second slot only, 3 for both.
+  LimitHit: array of Boolean;
+end;
+
+type TMerchingInfo = record
   Name: string;
   Buyprice, SellPrice, Slot, GeLimit: Integer;
 end;
@@ -27,7 +33,8 @@ const
   MinProfitPerFlip = 100000; //min amount to make per flip
 
 var
-  FlippingItems: array[0..4] of MerchingInfo;
+  FlippingItems: array[0..4] of TMerchingInfo;
+  Player: array of TGeLimits;    //wanted to do like an add-on  to players, but we would have to edit the include on every comp u would want to use it on.
 
 procedure LoadBarInfo;
 begin
@@ -72,7 +79,7 @@ end;
 
 function HighLow(index: integer): boolean;//Returns successful.  edits FlippingItem[index] for found values
 var
-  Buyprice, SellPrice, Margin, ProfitPerFlip, spot: Integer;
+  FreeInvSlot, Buyprice, SellPrice, Margin, ProfitPerFlip, spot: Integer;
 begin
   Result:= False;//default   , don't need this? - killer
   if(not GEFindFreeSpot(spot))then
@@ -112,7 +119,16 @@ begin
   begin
     writeln('Couldnt sell at 1gp - useless. Aborting...');
     GERecoverAtEx(spot, True);
-    Exit;
+    for i := 20 to 28 do
+    begin
+      if not ExistsItem(i) then
+      begin
+        FreeInvSlot := i;
+        Break;
+      end;
+    end;
+    DragItem(1, i); // try to keep the first few inv slots free, since GeSell works on invSlots
+    Exit;           //and I don't think we should go  down a dtm method for that since we would have to make them for every item
   end;
 
   Wait(2000);
@@ -139,7 +155,7 @@ procedure FlipItem(index: integer);
 var
   x: integer;
 begin
-  x:= 0;
+  x:= 0; //it's already set to 0, you don't need this - Killer
   GEBuy(FlippingItems[index].Name, IntToStr(FlippingItems[index].BuyPrice), IntToStr(FlippingItems[index].GELimit - 1));    //Buying Item
   wait(15000);//If not done in 15 seconds, do other stuff for half hour.  That logic will need to be off a timer and exist elsewhere I think
   if(GEFinishedAt(FlippingItems[index].slot))then//Bought all, so sell
@@ -276,13 +292,13 @@ begin
   ReleaseMouse(x, y, iButton);
 end;
 
-Procedure HumanMouseBox(X1, Y1, X2, Y2: Integer);
-    Var
-      FX, FY: Integer;
-    Begin
-      GaussBox(FX,FY,X1,Y1,X2,Y2);
-      HumanMMouse(FX,FY,0,0)
-    End;
+procedure HumanMouseBox(X1, Y1, X2, Y2: Integer);
+var
+  FX, FY: Integer;
+begin
+  GaussBox(FX,FY,X1,Y1,X2,Y2);
+  HumanMMouse(FX,FY,0,0)
+end;
 
 
 
