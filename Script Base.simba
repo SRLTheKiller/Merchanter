@@ -1,6 +1,6 @@
 program merch;
 
-{$Define SMART8}         //make changes here
+{$Define SMART8}
 {$i SRL/SRL.simba}
 {$i SRL/SRL/misc/Grandexchange.simba}
 {$i SRL/SRL/misc/Online.simba}
