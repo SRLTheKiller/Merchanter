@@ -20,7 +20,7 @@ program merch;
 {==============================================================================}
 type TGeLimits = record
   TimeWhenHit: array of Integer;
-  SlotsBeingUsed: array of Integer; // 0 for none, 1 for first slot only, 2 for second slot only, 3 for both.
+  SlotsBeingUsed: Integer; // 0 for none, 1 for first slot only, 2 for second slot only, 3 for both.
   LimitHit: array of Boolean;
 end;
 
@@ -33,7 +33,7 @@ const
   MinProfitPerFlip = 100000; //min amount to make per flip
 
 var
-  FlippingItems: array[0..4] of TMerchingInfo;
+  FlippingItems: array [0..7] of TMerchingInfo;
   Player: array of TGeLimits;    //wanted to do like an add-on  to players, but we would have to edit the include on every comp u would want to use it on.
 
 procedure LoadBarInfo;
@@ -52,13 +52,33 @@ begin
 
   with FlippingItems[2] do
   begin
-    Name := 'Yew Log';
+    Name := 'Yew Logs';
     GeLimit := 25000;
   end;
 
   with FlippingItems[3] do
   begin
     Name := 'Gold Ore';
+    GeLimit := 25000;
+  end;
+  with FlippingItems[4] do
+  begin
+    Name := 'Raw Lobster';
+    GeLimit := 20000;
+  end;
+  with FlippingItems[5] do
+  begin
+    Name := 'Lobster';
+    GeLimit := 10000;
+  end;
+  with FlippingItems[6] do
+  begin
+    Name := 'Law Rune';
+    GeLimit := 25000;
+  end;
+  with FlippingItems[7] do
+  begin
+    Name := 'tuna';
     GeLimit := 25000;
   end;
 end;
@@ -75,6 +95,10 @@ begin
     Pin        := '';           // Leave blank if you don't have one
     Active     := True;
   end;
+end;
+
+procedure ProgressReport;
+begin
 end;
 
 function InitiateExchange: boolean;
@@ -163,6 +187,7 @@ begin
   if(not GEFindFreeSpot(spot))then
   begin
     WriteLn('All current GE spots are taken.');
+    Player[CurrentPlayer].SlotsBeingUsed := 3;
     Exit;
   end;
   FlippingItems[index].slot:= spot;
@@ -177,6 +202,7 @@ begin
   end else
   begin
     Writeln('Item didnt buy at 20% over ge price, aborting...');
+    GeMenuExit;
     GERecoverAtEx(spot, True);
     Exit;
   end;
@@ -240,7 +266,8 @@ begin
   if(GEFinishedAt(FlippingItems[index].slot))then//Bought all, so sell
   begin
     GeSell(IntToStr(FlippingItems[index].SellPrice), 'all', 1);       //Selling Item
-  end else begin
+  end else
+  begin  // begin always on it's own line
     GEMenuExit;
     Exit;//Didn't flip immediately, come back to it later.
   end;
@@ -376,7 +403,7 @@ end;
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 var
-  j: integer;
+  j, L: integer;
 
 begin
   ClearDebug;
@@ -388,7 +415,8 @@ begin
   LoginPlayer;
   ClickNorth(SRL_ANGLE_HIGH);
   InitiateExchange;
-  for j:=0 to 3 do//high(FlippingItems) do
+  L := High(FlippingItems);
+  for j:=0 to L do
     if(HighLow(j))then
       StartFlipItem(j);//Glitch in sell item.  Starts typing before loaded, meaning incorrect quantity bought.
 end.
