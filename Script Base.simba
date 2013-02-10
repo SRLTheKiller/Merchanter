@@ -26,7 +26,7 @@ end;
 
 type TMerchingInfo = record
   Name: string;
-  Buyprice, SellPrice, Slot, GeLimit: Integer;
+  Buyprice, SellPrice, Slot, GeLimit, StartTimer: Integer;
 end;
 
 const
@@ -46,20 +46,20 @@ begin
 
   with FlippingItems[1] do
   begin
-    Name := 'ItemName';
-    GeLimit := 10000;
+    Name := 'Pure Essence';
+    GeLimit := 25000;
   end;
 
   with FlippingItems[2] do
   begin
-    Name := 'ItemName';
-    GeLimit := 10000;
+    Name := 'Yew Log';
+    GeLimit := 25000;
   end;
 
-  with FlippingItems[4] do
+  with FlippingItems[3] do
   begin
-    Name := 'ItemName';
-    GeLimit := 10000;
+    Name := 'Gold Ore';
+    GeLimit := 25000;
   end;
 end;
 
@@ -77,16 +77,95 @@ begin
   end;
 end;
 
+function InitiateExchange: boolean;
+var
+  arP, arAP: TPointArray;
+  arC, arUC: TIntegerArray;
+  ararP: T2DPointArray;
+  tmpCTS, i, j, arL, arL2: Integer;
+  P: TPoint;
+  R, G, B, fx, fy: Integer;
+  X, Y, Z: Extended;
+begin
+  if InGe then
+  begin
+    Result:= True;
+    Exit;
+  end;
+  tmpCTS := GetColorToleranceSpeed;
+  ColorToleranceSpeed(2);
+  SetColorSpeed2Modifiers(0.16, 1.33);
+
+  if not(FindColorsTolerance(arP, 3350823, MSX1, MSY1, MSX2, MSY2, 6)) then
+  begin
+    ColorToleranceSpeed(tmpCTS);
+    SetColorSpeed2Modifiers(0.2, 0.2);
+    Exit;
+  end;
+
+  arC := GetColors(arP);
+  arUC := arC;
+  ClearSameIntegers(arUC);
+  arL := High(arUC);
+  arL2 := High(arC);
+
+  for i := 0 to arL do
+  begin
+    ColorToRGB(arC[i], R, G, B);
+    if (R >= 25) and (R <= 51) and (G >= 19) and (G <= 46) and (B >= 35) and (B <= 73) then
+    begin
+      ColorToXYZ(arC[i], X, Y, Z);
+      if (X >= 0.97) and (X <= 3.21) and (Y >= 0.83) and (Y <= 2.89) and (Z >= 1.76) and (Z <= 6.49) then
+      begin
+        for j := 0 to arL2 do
+        begin
+          if (arUC[i] = arC[j]) then
+          begin
+            SetLength(arAP, Length(arAP) + 1);
+            arAP[High(arAP)] := arP[j];
+          end;
+        end;
+      end;
+    end;
+  end;
+
+  SortTPAFrom(arAP, Point(MSCX, MSCY));
+  ararP := SplitTPAEx(arAP, 3, 3);
+  arL := High(ararP);
+  for i := 0 to arL do
+  begin
+    if (Length(ararP[i]) < 10) then Continue;
+    P := MiddleTPA(ararP[i]);
+    MMouse(P.x, P.y, 5, 5);
+    Wait(100 + Random(100));
+    if (IsUpTextMultiCustom(['exch', 'rand', 'lerk'])) then
+      Break;
+  end;
+  ColorToleranceSpeed(tmpCTS);
+  SetColorSpeed2Modifiers(0.2, 0.2);
+
+  if (i = arL + 1) then
+  begin
+    Exit;
+  end;
+
+  ClickMouse2(mouse_right);
+  if(WaitOptionMulti(['nge G'], 1500)) then
+    Result:= True;
+
+  WaitFunc(@InGE, 500, 2500);
+end;
+
 function HighLow(index: integer): boolean;//Returns successful.  edits FlippingItem[index] for found values
 var
-  FreeInvSlot, Buyprice, SellPrice, Margin, ProfitPerFlip, spot: Integer;
+  FreeInvSlot, Buyprice, SellPrice, Margin, ProfitPerFlip, spot, i: Integer;
 begin
-  Result:= False;//default   , don't need this? - killer
   if(not GEFindFreeSpot(spot))then
   begin
     WriteLn('All current GE spots are taken.');
     Exit;
   end;
+  FlippingItems[index].slot:= spot;
   BuyPrice := GetGEPrice(FlippingItems[index].Name);
   BuyPrice := Round(BuyPrice * 1.2);
   GEBuy(FlippingItems[index].Name, IntToStr(BuyPrice), '1');    //Buying Item
@@ -106,7 +185,7 @@ begin
 
   BuyPrice := StrToInt(GetNumbers(GetTextAtExWrap(131, 286, 344, 300, 0, 50, 10, 39372, 5, 'StatChars')));
   Writeln('Buy Price ' + IntToStr(BuyPrice));   //Writing buying Price
-  FlippingItems[index].Sellprice:= BuyPrice;
+  FlippingItems[index].Sellprice:= BuyPrice-1;
   GEMenuExit;            //Exiting Menu (Seems buggy, read it.  Has NO randomness at all.  I may rewrite some of the functions in there)
   GEREcoverAt(spot);        //Getting the Item
   GeSell('1', '1', 1);       //Selling Item
@@ -132,14 +211,14 @@ begin
   end;
 
   Wait(2000);
-  SellPrice := StrToInt(GetNumbers(GetTextAtExWrap(131, 286, 344, 300, 0, 50, 10, 39372, 5, 'StatChars')))
+  SellPrice := StrToInt(GetNumbers(GetTextAtExWrap(131, 286, 344, 300, 0, 50, 10, 39372, 5, 'StatChars')));
   FlippingItems[index].BuyPrice:= SellPrice;
-  Writeln('Sell Price' + IntToStr(SellPrice))     //Writes selling price
+  Writeln('Sell Price ' + IntToStr(SellPrice))     //Writes selling price
   GEMenuExit;                   //exiting menu
   Wait(2000);
-  GERecoverAt(1);               //getting my precious money
-  Margin := BuyPrice - SellPrice
-  Writeln('Margin: ' + IntToStr(Margin)) // that's the high low
+  GERecoverAt(spot);               //getting my precious money
+  Margin := BuyPrice - SellPrice-1;
+  Writeln('Margin: ' + IntToStr(Margin)); // that's the high low
   ProfitPerFlip := Margin * FlippingItems[index].GeLimit;
 
   If ProfitPerFlip >= MinProfitPerFlip then
@@ -147,29 +226,24 @@ begin
     Result:= True;
   end else
   begin
-    Writeln('Profit Per Flip is less than Min Profit Per Flip');
+    Writeln('Profit Per Flip is less than Min Profit Per Flip.  Was ' + inttostr(profitperflip) + '. Desired ' + inttostr(MinProfitPerFlip));
   end;
 end;
 
-procedure FlipItem(index: integer);
+procedure StartFlipItem(index: integer);
 var
   x: integer;
 begin
-  x:= 0; //it's already set to 0, you don't need this - Killer
   GEBuy(FlippingItems[index].Name, IntToStr(FlippingItems[index].BuyPrice), IntToStr(FlippingItems[index].GELimit - 1));    //Buying Item
+  MarkTime(FlippingItems[index].StartTimer);
   wait(15000);//If not done in 15 seconds, do other stuff for half hour.  That logic will need to be off a timer and exist elsewhere I think
   if(GEFinishedAt(FlippingItems[index].slot))then//Bought all, so sell
   begin
     GeSell(IntToStr(FlippingItems[index].SellPrice), 'all', 1);       //Selling Item
   end else begin
-
+    GEMenuExit;
+    Exit;//Didn't flip immediately, come back to it later.
   end;
-
-  {
-  if x=300 then//half an hour and not done
-    GERecoverAtEx(FlippingItems[index].spot, True);
-   }
-
 end;
 
 //By Bandland100, modified by Ashaman88 to shift mouse speeds after every step
@@ -300,9 +374,9 @@ begin
   HumanMMouse(FX,FY,0,0)
 end;
 
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////
+var
+  j: integer;
 
 begin
   ClearDebug;
@@ -312,6 +386,9 @@ begin
   LoadBarInfo;
   DeclarePlayers;
   LoginPlayer;
-  if(HighLow(0))then
-    FlipItem(0);
+  ClickNorth(SRL_ANGLE_HIGH);
+  InitiateExchange;
+  for j:=0 to 3 do//high(FlippingItems) do
+    if(HighLow(j))then
+      StartFlipItem(j);//Glitch in sell item.  Starts typing before loaded, meaning incorrect quantity bought.
 end.
