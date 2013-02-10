@@ -30,7 +30,7 @@ type TMerchingInfo = record
 end;
 
 const
-  MinProfitPerFlip = 100000; //min amount to make per flip
+  MinProfitPerFlip = 75000; //min amount to make per flip
 
 var
   FlippingItems: array [0..7] of TMerchingInfo;
@@ -415,6 +415,7 @@ begin
   LoginPlayer;
   ClickNorth(SRL_ANGLE_HIGH);
   InitiateExchange;
+  if Pinscreen then Inpin(Players[CurrentPlayer].Pin);
   L := High(FlippingItems);
   for j:=0 to L do
     if(HighLow(j))then
